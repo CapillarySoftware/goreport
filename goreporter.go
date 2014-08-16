@@ -16,6 +16,7 @@ type Reporter struct {
 func NewReporter(url *string) (r Reporter, err error) {
 	r = Reporter{stats: make(map[string]float64)}
 	err = r.connect(url)
+	r.SetTimeout(1000)
 	return
 }
 
