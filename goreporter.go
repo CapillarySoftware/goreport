@@ -16,7 +16,7 @@ type Reporter struct {
 func NewReporter(url *string) (r Reporter, err error) {
 	r = Reporter{stats: make(map[string]float64)}
 	err = r.connect(url)
-	r.SetTimeout(1000)
+	r.SetTimeout(0)
 	return
 }
 
@@ -37,6 +37,11 @@ func (this *Reporter) SetTimeout(millis time.Duration) {
 
 func (this *Reporter) AddStat(key string, value float64) {
 	this.stats[key] += value
+}
+
+func (this *Reporter) AddStatWIndex(key string, value float64, indexName string) {
+	s := key + indexName
+	this.stats[s] += value
 }
 
 //Send data to queue
