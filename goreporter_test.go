@@ -23,4 +23,5 @@ var _ = gi.Describe("Goreporter", func() {
 		err = r.Flush()
 		gom.Expect(err).ShouldNot(gom.Equal(gom.BeNil()))
 	})
+
 })
