@@ -1,7 +1,7 @@
 package goreporter
 
 import (
-	"fmt"
+	// "fmt"
 	"github.com/CapillarySoftware/gostat/protoStat"
 	gi "github.com/onsi/ginkgo"
 	gom "github.com/onsi/gomega"

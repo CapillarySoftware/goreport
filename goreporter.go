@@ -41,9 +41,10 @@ main:
 				break main
 			}
 			updateMap(stats, m)
-			fmt.Println(stats)
 		case report := <-reportInterval:
 			fmt.Println("Time to report :", report)
+			fmt.Println(stats)
+			stats = make(map[string]*protoStat.ProtoStat)
 		}
 	}
 
