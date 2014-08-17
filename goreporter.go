@@ -20,15 +20,18 @@ func init() {
 	go asyncProcess(asyncQ, confQ)
 }
 
+// Reporter used by clients
 type Reporter struct {
 	async chan *protoStat.ProtoStat
 	conf  chan config
 }
 
+//Simple push socket to send external
 type push struct {
 	socket *nano.PushSocket
 }
 
+// Configuration for the background thread
 type config struct {
 	timeout int
 	url     string
@@ -36,6 +39,9 @@ type config struct {
 
 //Connect to the remote server
 func (this *push) connect(url *string) (err error) {
+	if nil != this.socket {
+		this.socket.Close()
+	}
 	this.socket, err = nano.NewPushSocket()
 	if nil != err {
 		return
@@ -44,6 +50,7 @@ func (this *push) connect(url *string) (err error) {
 	return
 }
 
+//Close the push socket
 func (this *push) Close() {
 	if nil != this.socket {
 		this.socket.Close()
@@ -55,6 +62,7 @@ func (this *push) SetTimeout(millis time.Duration) {
 	this.socket.SetSendTimeout(millis * time.Millisecond)
 }
 
+//Create a new push socket, only for internal use
 func newPush(url *string, timeout time.Duration) (p push, err error) {
 	err = p.connect(url)
 	p.SetTimeout(timeout)
@@ -87,7 +95,7 @@ main:
 		select {
 
 		case c = <-conf:
-			fmt.Println(c)
+			// fmt.Println(c)
 			sendQ.Close()
 			sendQ, err = newPush(&c.url, time.Duration(c.timeout))
 			if nil != err {
@@ -99,13 +107,13 @@ main:
 				break main
 			}
 			updateMap(stats, m)
-		case report := <-reportInterval:
-			fmt.Println("Time to report :", report)
-			fmt.Println(stats)
-			stats = make(map[string]*protoStat.ProtoStat)
+		case _ = <-reportInterval:
+			// fmt.Println("Time to report :", report)
+			// fmt.Println(stats)
 			err = sendQ.sendStats(stats)
+			stats = make(map[string]*protoStat.ProtoStat)
 			if nil != err {
-				fmt.Println(err)
+				fmt.Println("Failed send ", err)
 			}
 		}
 	}
@@ -141,11 +149,14 @@ func updateMap(stats map[string]*protoStat.ProtoStat, stat *protoStat.ProtoStat)
 
 func (this *push) sendStats(stats map[string]*protoStat.ProtoStat) (err error) {
 	var s []*protoStat.ProtoStat
+	// fmt.Println(stats)
 	pStats := new(protoStat.ProtoStats)
 	for _, v := range stats {
 		s = append(s, v)
 	}
+	// fmt.Println(s)
 	pStats.Stats = s
+	// fmt.Println(pStats)
 	bytes, err := pStats.Marshal()
 	if nil != err {
 		return
@@ -166,6 +177,7 @@ func NewReporter() (r Reporter) {
 	return
 }
 
+//Add a basic key value stat
 func (this *Reporter) AddStat(key string, value float64) {
 	stat := protoStat.ProtoStat{Key: &key, Value: &value}
 	this.async <- &stat
@@ -177,6 +189,7 @@ func (this *Reporter) AddStatWIndex(key string, value float64, indexKey string) 
 	this.async <- &stat
 }
 
+//Close the reporter and the background thread
 func (this *Reporter) Close() {
 	close(this.async)
 	close(this.conf)

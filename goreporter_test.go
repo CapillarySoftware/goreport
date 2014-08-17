@@ -5,20 +5,37 @@ import (
 	"github.com/CapillarySoftware/gostat/protoStat"
 	gi "github.com/onsi/ginkgo"
 	gom "github.com/onsi/gomega"
+	nano "github.com/op/go-nanomsg"
+	"time"
 )
 
 var _ = gi.Describe("Goreporter", func() {
 	var rep Reporter
 	gi.BeforeEach(func() {
-		ReporterConfig("ipc:///tmp/goreportertest.ipc", 0)
+		ReporterConfig("ipc:///tmp/goreportertest.ipc", 1)
 		rep = NewReporter()
 		gom.Expect(rep).ShouldNot(gom.Equal(gom.BeNil()))
 	})
 
-	gi.It("Basic new stat with failed flush", func() {
+	gi.It("End to End integration test with stats", func() {
+		pull, err := nano.NewPullSocket()
+		gom.Expect(err).Should(gom.BeNil())
+		pull.SetRecvTimeout(6 * time.Second)
+		pull.SetRecvBuffer(1000)
+		pull.Bind("ipc:///tmp/goreportertest.ipc")
 		key := "key"
-		rep.AddStat(key, 30)
-		rep.AddStatWIndex(key, 30, "index")
+		rep.AddStat(key, 2)
+		rep.AddStat(key, 2)
+		rep.AddStatWIndex(key, 2, "index")
+		rep.AddStatWIndex(key, 2, "index")
+		msg, err := pull.Recv(0)
+		gom.Expect(err).Should(gom.BeNil())
+		stats := new(protoStat.ProtoStats)
+		stats.Unmarshal(msg)
+		gom.Expect(len(stats.Stats)).Should(gom.Equal(2))
+		for _, stat := range stats.Stats {
+			gom.Expect(stat.GetValue()).Should(gom.Equal(float64(4)))
+		}
 	})
 
 	gi.It("Validate update map increments correctly with indexKeys", func() {
