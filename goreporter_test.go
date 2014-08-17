@@ -8,22 +8,17 @@ import (
 )
 
 var _ = gi.Describe("Goreporter", func() {
-	gi.It("Basic creation with invalid queue name", func() {
-		url := "fail"
-		_, err := NewReporter(&url)
-		gom.Expect(err).ShouldNot(gom.Equal(gom.BeNil()))
+	var rep Reporter
+	gi.BeforeEach(func() {
+		ReporterConfig("ipc:///tmp/goreportertest.ipc", 0)
+		rep = NewReporter()
+		gom.Expect(rep).ShouldNot(gom.Equal(gom.BeNil()))
 	})
 
 	gi.It("Basic new stat with failed flush", func() {
-		url := "ipc:///tmp/test"
-		r, err := NewReporter(&url)
-		defer r.Close()
-		gom.Expect(err).Should(gom.BeNil())
 		key := "key"
-		r.AddStat(key, 30)
-		r.AddStatWIndex(key, 30, "index")
-
-		gom.Expect(err).ShouldNot(gom.Equal(gom.BeNil()))
+		rep.AddStat(key, 30)
+		rep.AddStatWIndex(key, 30, "index")
 	})
 
 	gi.It("Validate update map increments correctly with indexKeys", func() {

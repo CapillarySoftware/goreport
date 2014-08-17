@@ -10,21 +10,70 @@ import (
 )
 
 var asyncQ chan *protoStat.ProtoStat
+var confQ chan config
 var wg sync.WaitGroup
 
 func init() {
 	wg.Add(1)
 	asyncQ = make(chan *protoStat.ProtoStat, 1000)
-	go asyncProcess(asyncQ)
+	confQ = make(chan config, 1) //block on config
+	go asyncProcess(asyncQ, confQ)
 }
 
 type Reporter struct {
+	async chan *protoStat.ProtoStat
+	conf  chan config
+}
+
+type push struct {
 	socket *nano.PushSocket
-	async  chan *protoStat.ProtoStat
+}
+
+type config struct {
+	timeout int
+	url     string
+}
+
+//Connect to the remote server
+func (this *push) connect(url *string) (err error) {
+	this.socket, err = nano.NewPushSocket()
+	if nil != err {
+		return
+	}
+	_, err = this.socket.Connect(*url)
+	return
+}
+
+func (this *push) Close() {
+	if nil != this.socket {
+		this.socket.Close()
+	}
+}
+
+//Set the timeout for the send socket
+func (this *push) SetTimeout(millis time.Duration) {
+	this.socket.SetSendTimeout(millis * time.Millisecond)
+}
+
+func newPush(url *string, timeout time.Duration) (p push, err error) {
+	err = p.connect(url)
+	p.SetTimeout(timeout)
+	return
 }
 
 //async background thread that processing all stats
-func asyncProcess(q <-chan *protoStat.ProtoStat) {
+func asyncProcess(q <-chan *protoStat.ProtoStat, conf <-chan config) {
+	c := <-conf
+	if c.url == "" {
+		fmt.Println("Failed to get valid configuration maybe ReporterConfig not called?")
+		wg.Done()
+		return
+	}
+	sendQ, err := newPush(&c.url, time.Duration(c.timeout))
+	if nil != err {
+		wg.Done()
+		return
+	}
 	stats := make(map[string]*protoStat.ProtoStat)
 	reportInterval := make(chan bool, 1)
 	go func() {
@@ -36,6 +85,15 @@ func asyncProcess(q <-chan *protoStat.ProtoStat) {
 main:
 	for {
 		select {
+
+		case c = <-conf:
+			fmt.Println(c)
+			sendQ.Close()
+			sendQ, err = newPush(&c.url, time.Duration(c.timeout))
+			if nil != err {
+				fmt.Println("Failed to reconfigure queue")
+				break main
+			}
 		case m := <-q:
 			if nil == m {
 				break main
@@ -45,6 +103,10 @@ main:
 			fmt.Println("Time to report :", report)
 			fmt.Println(stats)
 			stats = make(map[string]*protoStat.ProtoStat)
+			err = sendQ.sendStats(stats)
+			if nil != err {
+				fmt.Println(err)
+			}
 		}
 	}
 
@@ -54,6 +116,10 @@ main:
 			break
 		}
 		updateMap(stats, m)
+	}
+	err = sendQ.sendStats(stats)
+	if nil != err {
+		fmt.Println(err)
 	}
 
 	fmt.Println("Finished bg thread")
@@ -73,28 +139,31 @@ func updateMap(stats map[string]*protoStat.ProtoStat, stat *protoStat.ProtoStat)
 	}
 }
 
-//New reporter that reports when flushed
-func NewReporter(url *string) (r Reporter, err error) {
-
-	r = Reporter{async: asyncQ}
-	err = r.connect(url)
-	r.SetTimeout(0)
-	return
-}
-
-//Connect to the remote server
-func (this *Reporter) connect(url *string) (err error) {
-	this.socket, err = nano.NewPushSocket()
+func (this *push) sendStats(stats map[string]*protoStat.ProtoStat) (err error) {
+	var s []*protoStat.ProtoStat
+	pStats := new(protoStat.ProtoStats)
+	for _, v := range stats {
+		s = append(s, v)
+	}
+	pStats.Stats = s
+	bytes, err := pStats.Marshal()
 	if nil != err {
 		return
 	}
-	_, err = this.socket.Connect(*url)
+	_, err = this.socket.Send(bytes, 0) //blocking
 	return
 }
 
-//Set the timeout for the send socket
-func (this *Reporter) SetTimeout(millis time.Duration) {
-	this.socket.SetSendTimeout(millis * time.Millisecond)
+//New reporter that reports at 5 second intervals
+func ReporterConfig(url string, timeout int) {
+	c := config{timeout: timeout, url: url}
+	confQ <- c
+	return
+}
+
+func NewReporter() (r Reporter) {
+	r = Reporter{async: asyncQ, conf: confQ}
+	return
 }
 
 func (this *Reporter) AddStat(key string, value float64) {
@@ -110,20 +179,7 @@ func (this *Reporter) AddStatWIndex(key string, value float64, indexKey string) 
 
 func (this *Reporter) Close() {
 	close(this.async)
+	close(this.conf)
 	fmt.Println("Closed queue, waiting for cleanup")
 	wg.Wait()
 }
-
-// //Send data to queue
-// func (this *Reporter) Flush() (err error) {
-// 	var s []*protoStat.ProtoStat
-// 	stats := new(protoStat.ProtoStats)
-// 	for k, v := range this.stats {
-// 		stat := protoStat.ProtoStat{Key: &k, Value: &v}
-// 		s = append(s, &stat)
-// 	}
-// 	stats.Stats = s
-// 	bytes, err := stats.Marshal()
-// 	_, err = this.socket.Send(bytes, 0) //blocking
-// 	return
-// }
