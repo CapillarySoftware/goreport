@@ -1,4 +1,4 @@
-package goreporter
+package goreport
 
 import (
 	// "fmt"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var _ = gi.Describe("Goreporter", func() {
+var _ = gi.Describe("Goreport", func() {
 	var rep Reporter
 	gi.BeforeEach(func() {
 		ReporterConfig("ipc:///tmp/goreportertest.ipc", 1)

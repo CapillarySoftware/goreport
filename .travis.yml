@@ -12,15 +12,15 @@ install:
 - go install github.com/onsi/gomega
 - export PATH=$PATH:$HOME/gopath/bin
 - $HOME/gopath/bin/godep restore
-- go install github.com/CapillarySoftware/goreporter
+- go install github.com/CapillarySoftware/goreport
 script: $HOME/gopath/bin/ginkgo -cover -r --race
 deploy:
   provider: releases
   api_key:
     secure: cAfvm2u93f2+NVWn0KOVgjQKl/ZiRO579l+2hm0BN3A+0ptgNuY2wxonhpfy5S5j9cVohm6XyaEdD+TYPQJXm1XVCb7PvPCHdgk833pgBZd79lKy+N/Uz2fd9V3Al3Y/57+eP4V263Z+8/YYDttrqB1NOQ7cX2xAV4Ql3tf2hY4=
-  file: $HOME/gopath/bin/goreporter
+  file: $HOME/gopath/bin/goreport
   skip_cleanup: true
   on:
-    repo: CapillarySoftware/goreporter
+    repo: CapillarySoftware/goreport
     tags: true
     all_branches: true

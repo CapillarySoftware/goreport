@@ -1,4 +1,4 @@
-package goreporter
+package goreport
 
 import (
 	"github.com/CapillarySoftware/gostat/protoStat"
@@ -110,10 +110,12 @@ main:
 		case _ = <-reportInterval:
 			// fmt.Println("Time to report :", report)
 			// fmt.Println(stats)
-			err = sendQ.sendStats(stats)
-			stats = make(map[string]*protoStat.ProtoStat)
-			if nil != err {
-				fmt.Println("Failed send ", err)
+			if len(stats) > 0 {
+				err = sendQ.sendStats(stats)
+				stats = make(map[string]*protoStat.ProtoStat)
+				if nil != err {
+					fmt.Println("Failed to send stats: ", err)
+				}
 			}
 		}
 	}
@@ -156,7 +158,7 @@ func (this *push) sendStats(stats map[string]*protoStat.ProtoStat) (err error) {
 	}
 	// fmt.Println(s)
 	pStats.Stats = s
-	// fmt.Println(pStats)
+	fmt.Println(pStats)
 	bytes, err := pStats.Marshal()
 	if nil != err {
 		return

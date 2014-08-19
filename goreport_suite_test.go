@@ -1,4 +1,4 @@
-package goreporter
+package goreport
 
 import (
 	gi "github.com/onsi/ginkgo"
