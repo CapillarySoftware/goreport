@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/CapillarySoftware/goreporter",
+	"ImportPath": "github.com/CapillarySoftware/goreport",
 	"GoVersion": "go1.3",
 	"Deps": [
 		{
