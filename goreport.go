@@ -1,4 +1,4 @@
-package goreporter
+package goreport
 
 import (
 	"github.com/CapillarySoftware/gostat/protoStat"
