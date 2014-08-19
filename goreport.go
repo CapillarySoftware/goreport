@@ -158,6 +158,9 @@ func (this *push) sendStats(stats map[string]*protoStat.ProtoStat) (err error) {
 	}
 	// fmt.Println(s)
 	pStats.Stats = s
+	now := time.Now().UTC().UnixNano()
+	pStats.TimeNano = &now
+
 	fmt.Println(pStats)
 	bytes, err := pStats.Marshal()
 	if nil != err {
@@ -177,6 +180,13 @@ func ReporterConfig(url string, timeout int) {
 func NewReporter() (r Reporter) {
 	r = Reporter{async: asyncQ, conf: confQ}
 	return
+}
+
+func (this *Reporter) AddRepeatedStat(key string) {
+
+}
+func (this *Reporter) AddRepeatedStatWIndex(key string, indexKey string) {
+
 }
 
 //Add a basic key value stat
