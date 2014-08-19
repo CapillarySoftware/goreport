@@ -112,7 +112,7 @@ main:
 			// fmt.Println(stats)
 			if len(stats) > 0 {
 				err = sendQ.sendStats(stats)
-				stats = make(map[string]*protoStat.ProtoStat)
+				stats = cleanMap(stats)
 				if nil != err {
 					fmt.Println("Failed to send stats: ", err)
 				}
@@ -134,6 +134,19 @@ main:
 
 	fmt.Println("Finished bg thread")
 	wg.Done()
+}
+
+//Clean the map and only keep repeated stats
+func cleanMap(stats map[string]*protoStat.ProtoStat) (newStats map[string]*protoStat.ProtoStat) {
+	newStats = make(map[string]*protoStat.ProtoStat)
+	for k, v := range stats {
+		if v.GetRepeat() {
+			zero := float64(0)
+			v.Value = &zero
+			newStats[k] = v
+		}
+	}
+	return
 }
 
 //update map with new data
