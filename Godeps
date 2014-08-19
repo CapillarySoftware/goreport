@@ -8,7 +8,7 @@
 		},
 		{
 			"ImportPath": "github.com/CapillarySoftware/gostat/protoStat",
-			"Rev": "cd6a00de8618c1dcef6e35cebc41305fd7840a1d"
+			"Rev": "016c9d6d5a4dd6157c6cf27df61f8c1435636c31"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
