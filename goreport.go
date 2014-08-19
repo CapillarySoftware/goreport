@@ -156,7 +156,7 @@ func (this *push) sendStats(stats map[string]*protoStat.ProtoStat) (err error) {
 	}
 	// fmt.Println(s)
 	pStats.Stats = s
-	// fmt.Println(pStats)
+	fmt.Println(pStats)
 	bytes, err := pStats.Marshal()
 	if nil != err {
 		return
