@@ -112,7 +112,7 @@ main:
 			// fmt.Println(stats)
 			if len(stats) > 0 {
 				err = sendQ.sendStats(stats)
-				stats = make(map[string]*protoStat.ProtoStat)
+				stats = cleanMap(stats)
 				if nil != err {
 					fmt.Println("Failed to send stats: ", err)
 				}
@@ -134,6 +134,19 @@ main:
 
 	fmt.Println("Finished bg thread")
 	wg.Done()
+}
+
+//Clean the map and only keep repeated stats
+func cleanMap(stats map[string]*protoStat.ProtoStat) (newStats map[string]*protoStat.ProtoStat) {
+	newStats = make(map[string]*protoStat.ProtoStat)
+	for k, v := range stats {
+		if v.GetRepeat() {
+			zero := float64(0)
+			v.Value = &zero
+			newStats[k] = v
+		}
+	}
+	return
 }
 
 //update map with new data
@@ -158,6 +171,9 @@ func (this *push) sendStats(stats map[string]*protoStat.ProtoStat) (err error) {
 	}
 	// fmt.Println(s)
 	pStats.Stats = s
+	now := time.Now().UTC().UnixNano()
+	pStats.TimeNano = &now
+
 	fmt.Println(pStats)
 	bytes, err := pStats.Marshal()
 	if nil != err {
@@ -177,6 +193,22 @@ func ReporterConfig(url string, timeout int) {
 func NewReporter() (r Reporter) {
 	r = Reporter{async: asyncQ, conf: confQ}
 	return
+}
+
+//Add a stat that should be repeated with 0 when not seen
+func (this *Reporter) AddRepeatedStat(key string) {
+	b := true
+	value := float64(0)
+	stat := protoStat.ProtoStat{Key: &key, Value: &value, Repeat: &b}
+	this.async <- &stat
+}
+
+//Add a stat that should be repeated with 0 when not seen
+func (this *Reporter) AddRepeatedStatWIndex(key string, indexKey string) {
+	b := true
+	value := float64(0)
+	stat := protoStat.ProtoStat{Key: &key, Value: &value, IndexKey: &indexKey, Repeat: &b}
+	this.async <- &stat
 }
 
 //Add a basic key value stat
