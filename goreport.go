@@ -196,7 +196,7 @@ func NewReporter() (r Reporter) {
 }
 
 //Add a stat that should be repeated with 0 when not seen
-func (this *Reporter) AddRepeatedStat(key string) {
+func (this *Reporter) RegisterStat(key string) {
 	b := true
 	value := float64(0)
 	stat := protoStat.ProtoStat{Key: &key, Value: &value, Repeat: &b}
@@ -204,7 +204,7 @@ func (this *Reporter) AddRepeatedStat(key string) {
 }
 
 //Add a stat that should be repeated with 0 when not seen
-func (this *Reporter) AddRepeatedStatWIndex(key string, indexKey string) {
+func (this *Reporter) RegisterStatWIndex(key string, indexKey string) {
 	b := true
 	value := float64(0)
 	stat := protoStat.ProtoStat{Key: &key, Value: &value, IndexKey: &indexKey, Repeat: &b}

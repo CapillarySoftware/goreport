@@ -25,8 +25,8 @@ var _ = gi.Describe("Goreport", func() {
 		pull.SetRecvBuffer(1000)
 		pull.Bind("ipc:///tmp/goreportertest.ipc")
 		key := "key"
-		rep.AddRepeatedStat("repeat")
-		rep.AddRepeatedStatWIndex("repeateWIndex", "Index")
+		rep.RegisterStat("repeat")
+		rep.RegisterStatWIndex("repeateWIndex", "Index")
 		rep.AddStat(key, 2)
 		rep.AddStat(key, 2)
 		rep.AddStatWIndex(key, 2, "index")
