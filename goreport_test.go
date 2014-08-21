@@ -45,6 +45,23 @@ var _ = gi.Describe("Goreport", func() {
 		}
 	})
 
+	gi.It("Reset Stats to zero", func() {
+		stats := make(map[string]*protoStat.ProtoStat)
+		key := "key"
+		indexKey := "index"
+		b := true
+		value := float64(200)
+
+		stat := protoStat.ProtoStat{Key: &key, Value: &value, IndexKey: &indexKey, Repeat: &b}
+		updateMap(stats, &stat)
+
+		resetStats(stats)
+		gom.Expect(len(stats)).Should(gom.Equal(1))
+		for _, v := range stats {
+			gom.Expect(v.GetValue()).Should(gom.Equal(float64(0)))
+		}
+	})
+
 	gi.It("Validate clean map doesn't remove repeated fields", func() {
 		stats := make(map[string]*protoStat.ProtoStat)
 		key := "key"

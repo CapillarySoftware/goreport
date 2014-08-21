@@ -136,6 +136,16 @@ main:
 	wg.Done()
 }
 
+//reset all stats to 0
+func resetStats(stats map[string]*protoStat.ProtoStat) {
+	for _, v := range stats {
+		if v.GetRepeat() {
+			zero := float64(0)
+			v.Value = &zero
+		}
+	}
+}
+
 //Clean the map and only keep repeated stats
 func cleanMap(stats map[string]*protoStat.ProtoStat) (newStats map[string]*protoStat.ProtoStat) {
 	newStats = make(map[string]*protoStat.ProtoStat)
