@@ -165,7 +165,11 @@ func updateMap(stats map[string]*protoStat.ProtoStat, stat *protoStat.ProtoStat)
 	ck := stat.GetKey() + stat.GetIndexKey()
 	oldStat, ok := stats[ck]
 	if !ok {
-		stats[ck] = stat
+		if stat.GetRepeat() {
+			stats[ck] = stat
+		} else {
+			fmt.Println("Stat has not been registered! ", stat)
+		}
 	} else {
 		v := oldStat.GetValue() + stat.GetValue()
 		oldStat.Value = &v
