@@ -112,7 +112,7 @@ main:
 			// fmt.Println(stats)
 			if len(stats) > 0 {
 				err = sendQ.sendStats(stats)
-				stats = cleanMap(stats)
+				resetStats(stats)
 				if nil != err {
 					fmt.Println("Failed to send stats: ", err)
 				}
@@ -136,17 +136,14 @@ main:
 	wg.Done()
 }
 
-//Clean the map and only keep repeated stats
-func cleanMap(stats map[string]*protoStat.ProtoStat) (newStats map[string]*protoStat.ProtoStat) {
-	newStats = make(map[string]*protoStat.ProtoStat)
-	for k, v := range stats {
+//reset all stats to 0
+func resetStats(stats map[string]*protoStat.ProtoStat) {
+	for _, v := range stats {
 		if v.GetRepeat() {
 			zero := float64(0)
 			v.Value = &zero
-			newStats[k] = v
 		}
 	}
-	return
 }
 
 //update map with new data
@@ -155,7 +152,11 @@ func updateMap(stats map[string]*protoStat.ProtoStat, stat *protoStat.ProtoStat)
 	ck := stat.GetKey() + stat.GetIndexKey()
 	oldStat, ok := stats[ck]
 	if !ok {
-		stats[ck] = stat
+		if stat.GetRepeat() {
+			stats[ck] = stat
+		} else {
+			fmt.Println("Stat has not been registered! ", stat)
+		}
 	} else {
 		v := oldStat.GetValue() + stat.GetValue()
 		oldStat.Value = &v

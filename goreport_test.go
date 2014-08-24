@@ -6,7 +6,7 @@ import (
 	gi "github.com/onsi/ginkgo"
 	gom "github.com/onsi/gomega"
 	nano "github.com/op/go-nanomsg"
-	"strings"
+	// "strings"
 	"time"
 )
 
@@ -25,8 +25,8 @@ var _ = gi.Describe("Goreport", func() {
 		pull.SetRecvBuffer(1000)
 		pull.Bind("ipc:///tmp/goreportertest.ipc")
 		key := "key"
-		rep.RegisterStat("repeat")
-		rep.RegisterStatWIndex("repeateWIndex", "Index")
+		rep.RegisterStat(key)
+		rep.RegisterStatWIndex(key, "index")
 		rep.AddStat(key, 2)
 		rep.AddStat(key, 2)
 		rep.AddStatWIndex(key, 2, "index")
@@ -35,33 +35,28 @@ var _ = gi.Describe("Goreport", func() {
 		gom.Expect(err).Should(gom.BeNil())
 		stats := new(protoStat.ProtoStats)
 		stats.Unmarshal(msg)
-		gom.Expect(len(stats.Stats)).Should(gom.Equal(4))
+		gom.Expect(len(stats.Stats)).Should(gom.Equal(2))
 		for _, stat := range stats.Stats {
-			if strings.Contains(stat.GetKey(), "repeat") {
-				gom.Expect(stat.GetValue()).Should(gom.Equal(float64(0)))
-			} else {
-				gom.Expect(stat.GetValue()).Should(gom.Equal(float64(4)))
-			}
+			gom.Expect(stat.GetValue()).Should(gom.Equal(float64(4)))
+
 		}
 	})
 
-	gi.It("Validate clean map doesn't remove repeated fields", func() {
+	gi.It("Reset Stats to zero", func() {
 		stats := make(map[string]*protoStat.ProtoStat)
 		key := "key"
 		indexKey := "index"
 		b := true
 		value := float64(200)
-		for i := 0; i < 2; i++ {
-			stat := protoStat.ProtoStat{Key: &key, Value: &value, IndexKey: &indexKey}
-			updateMap(stats, &stat)
-		}
-		//add our repeated field as well
-		rKey := "repeat"
-		stat := protoStat.ProtoStat{Key: &rKey, Value: &value, IndexKey: &indexKey, Repeat: &b}
+
+		stat := protoStat.ProtoStat{Key: &key, Value: &value, IndexKey: &indexKey, Repeat: &b}
 		updateMap(stats, &stat)
-		gom.Expect(len(stats)).Should(gom.Equal(2))
-		newMap := cleanMap(stats)
-		gom.Expect(len(newMap)).Should(gom.Equal(1))
+
+		resetStats(stats)
+		gom.Expect(len(stats)).Should(gom.Equal(1))
+		for _, v := range stats {
+			gom.Expect(v.GetValue()).Should(gom.Equal(float64(0)))
+		}
 	})
 
 	gi.It("Validate update map increments correctly with indexKeys", func() {
@@ -69,8 +64,9 @@ var _ = gi.Describe("Goreport", func() {
 		key := "key"
 		indexKey := "index"
 		value := float64(200)
+		repeat := true
 		for i := 0; i < 2; i++ {
-			stat := protoStat.ProtoStat{Key: &key, Value: &value, IndexKey: &indexKey}
+			stat := protoStat.ProtoStat{Key: &key, Value: &value, IndexKey: &indexKey, Repeat: &repeat}
 			updateMap(stats, &stat)
 		}
 		gom.Expect(len(stats)).Should(gom.Equal(1))
@@ -83,8 +79,9 @@ var _ = gi.Describe("Goreport", func() {
 		stats := make(map[string]*protoStat.ProtoStat)
 		key := "key"
 		value := float64(200)
+		repeat := true
 		for i := 0; i < 2; i++ {
-			stat := protoStat.ProtoStat{Key: &key, Value: &value}
+			stat := protoStat.ProtoStat{Key: &key, Value: &value, Repeat: &repeat}
 			updateMap(stats, &stat)
 		}
 		gom.Expect(len(stats)).Should(gom.Equal(1))
